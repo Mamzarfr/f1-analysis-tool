@@ -2,10 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_health import health
 
-
 def check_api() -> dict[str, str]:
     return {"api": "online"}
-
 
 app = FastAPI(
     title="F1 Analysis Tool API",
