@@ -1,7 +1,7 @@
 [project]
 name = "f1-analysis-tool"
 version = "0.1.0"
-description = "F1 Race Analytics Platform - Data Engineering + Visualization"
+description = "F1 Racing Analysis Tool: A FastAPI wep app for analyzing and visualizing formula 1 racing data."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
