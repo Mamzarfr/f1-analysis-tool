@@ -2,8 +2,13 @@
 
 from logging import basicConfig, getLogger, INFO
 
+import numpy as np
 import pandas as pd
+import psycopg2.extensions
 from fastf1 import Cache, get_session
+
+psycopg2.extensions.register_adapter(np.int64, lambda val: psycopg2.extensions.AsIs(int(val)))
+psycopg2.extensions.register_adapter(np.float64, lambda val: psycopg2.extensions.AsIs(float(val)))
 
 from backend.app.database import get_connection
 
@@ -200,8 +205,8 @@ def _insert_laps(cur, session, session_id: int, driver_ids: dict[str, int]):
                 _to_ms(lap["Sector2Time"]),
                 _to_ms(lap["Sector3Time"]),
                 lap.get("Compound"),
-                lap.get("TyreLife"),
-                lap.get("Position"),
+                _safe_int(lap.get("TyreLife")),
+                _safe_int(lap.get("Position")),
             )
         )
 
@@ -235,6 +240,21 @@ def _insert_pits(cur, session, session_id: int, driver_ids: dict[str, int]):
                 _to_ms(pit_time),
             )
         )
+
+
+def _safe_int(val) -> int | None:
+    """
+    Handle NaN and infinite values before giving them to the db.
+
+    Args:
+        val: A numeric value or NaN/inf
+
+    Returns:
+        The value as an integer, or None if the value is NaN, -inf or inf
+    """
+    if pd.isna(val) or not np.isfinite(val):
+        return None
+    return int(val)
 
 
 def _to_ms(td) -> int | None:
