@@ -13,8 +13,7 @@ def get_connection():
     """
     Return a connection to the PostgreSQL database.
 
-    Returns:
-        A connection to the PostgreSQL database
+    :return: A connection to the PostgreSQL database
     """
     return psycopg2.connect(
         host=os.getenv("POSTGRES_HOST", "localhost"),

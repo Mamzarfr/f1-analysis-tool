@@ -5,7 +5,7 @@ from logging import basicConfig, getLogger, INFO
 import numpy as np
 import pandas as pd
 import psycopg2.extensions
-from fastf1 import Cache, get_session
+from fastf1 import Cache, get_session, get_event_schedule
 
 psycopg2.extensions.register_adapter(np.int64, lambda val: psycopg2.extensions.AsIs(int(val)))
 psycopg2.extensions.register_adapter(np.float64, lambda val: psycopg2.extensions.AsIs(float(val)))
@@ -33,13 +33,10 @@ def import_session(year: int, event_name: str, session_type: str):
     """
     Import a complete session into the database.
 
-    Args:
-        year: The season year
-        event_name: The name of the event ("Silverstone", "Monza", etc.)
-        session_type: The type of session, one of TYPE_TABLE values.
-
-    Raises:
-        Exception: If any database operation fails, rolls back and raises
+    :param year: The season year
+    :param event_name: The name of the event ("Silverstone", "Monza", etc)
+    :param session_type: The type of session, one of TYPE_TABLE values
+    :raises Exception: If any database operation fails, rolls back and raises
     """
     session = get_session(year, event_name, session_type)
     session.load()
@@ -69,9 +66,8 @@ def _insert_season(cur, year: int):
     """
     Insert a season into the database if missing.
 
-    Args:
-        cur: Database cursor
-        year: The season year
+    :param cur: Database cursor
+    :param year: The season year
     """
     cur.execute(
         "INSERT INTO seasons (year) VALUES (%s) ON CONFLICT DO NOTHING",
@@ -83,13 +79,10 @@ def _insert_event(cur, session, year: int) -> int:
     """
     Insert an event into the database and return its ID.
 
-    Args:
-        cur: Database cursor
-        session: FastF1 session object
-        year: The season year
-
-    Returns:
-        The database ID of the inserted/existing event
+    :param cur: Database cursor
+    :param session: FastF1 session object
+    :param year: The season year
+    :return: The database ID of the inserted/existing event
     """
     event = session.event
     cur.execute(
@@ -121,13 +114,10 @@ def _insert_session(cur, session, event_id: int) -> int:
     """
     Insert a session into the database and return its ID.
 
-    Args:
-        cur: Database cursor
-        session: FastF1 session object
-        event_id: The database ID of the parent event
-
-    Returns:
-        The ID of the new session
+    :param cur: Database cursor
+    :param session: FastF1 session object
+    :param event_id: The database ID of the parent event
+    :return: The ID of the new session
     """
     session_type = TYPE_TABLE.get(session.name, session.name)
     cur.execute(
@@ -144,13 +134,10 @@ def _insert_drivers(cur, session, year: int) -> dict[str, int]:
     """
     Insert drivers from a session into the database
 
-    Args:
-        cur: Database cursor
-        session: FastF1 session object
-        year: The season year
-
-    Returns:
-        A dictionary mapping driver codes to their db ID.
+    :param cur: Database cursor
+    :param session: FastF1 session object
+    :param year: The season year
+    :return: A dictionary mapping driver codes to their db ID.
     """
     driver_ids = {}
     for _, driver in session.results.iterrows():
@@ -179,11 +166,10 @@ def _insert_laps(cur, session, session_id: int, driver_ids: dict[str, int]):
     """
     Insert lap data from a session into the database.
 
-    Args:
-        cur: Database cursor
-        session: FastF1 session object
-        session_id: The session ID in the database
-        driver_ids: Dictionary mapping driver codes to their db ID.
+    :param cur: Database cursor
+    :param session: FastF1 session object
+    :param session_id: The session ID in the database
+    :param driver_ids: Dictionary mapping driver codes to their db ID.
     """
     laps = session.laps
     for _, lap in laps.iterrows():
@@ -215,11 +201,10 @@ def _insert_pits(cur, session, session_id: int, driver_ids: dict[str, int]):
     """
     Insert all pit stops from a session into the database.
 
-    Args:
-        cur: Database cursor
-        session: FastF1 session object
-        session_id: The db ID of the session
-        driver_ids: Dictionary mapping driver codes to their db ID.
+    :param cur: Database cursor
+    :param session: FastF1 session object
+    :param session_id: The db ID of the session
+    :param driver_ids: Dictionary mapping driver codes to their db ID.
     """
     laps = session.laps
     pit_laps = laps[laps["PitInTime"].notna()]
@@ -246,11 +231,8 @@ def _safe_int(val) -> int | None:
     """
     Handle NaN and infinite values before giving them to the db.
 
-    Args:
-        val: A numeric value or NaN/inf
-
-    Returns:
-        The value as an integer, or None if the value is NaN, -inf or inf
+    :param val: A numeric value or NaN/inf
+    :return: The value as an integer, or None if the value is NaN, -inf or inf
     """
     if pd.isna(val) or not np.isfinite(val):
         return None
@@ -261,16 +243,31 @@ def _to_ms(td) -> int | None:
     """
     Convert pandas timedeltas to milliseconds.
 
-    Args:
-        td: Timedelta or NaT
-
-    Returns:
-        The time in milliseconds as an int, None if td is NaT/NaN
+    :param td: Timedelta or NaT
+    :return: The time in milliseconds as an int, None if td is NaT/NaN
     """
     if pd.isna(td):
         return None
     return int(td.total_seconds() * 1000)
 
 
+def import_season(year: int):
+    """
+    Import all sessions from a season into the database.
+
+    :param year: The season year to import
+    """
+    sch = get_event_schedule(year, include_testing=False)
+    types = ["FP1", "FP2", "FP3", "Q", "SQ", "S", "R"]
+
+    for _, event in sch.iterrows():
+        event_name = event["EventName"]
+        for st in types:
+            try:
+                import_session(year, event_name, st)
+            except Exception as e:
+                logger.warning(f"Skipped {event_name} {st}: {e}")
+
+
 if __name__ == "__main__":
-    import_session(2025, "Silverstone", "R")
+    import_season(2025)
