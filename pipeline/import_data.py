@@ -300,4 +300,4 @@ def import_season(year: int):
 
 
 if __name__ == "__main__":
-    import_season(2024)
+    import_season(2023)
