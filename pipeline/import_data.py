@@ -19,12 +19,12 @@ Cache.enable_cache("./ff1_cache")
 
 # Mapping of FastF1 session names to database names
 TYPE_TABLE = {
-    "Free Practice 1": "FP1",
-    "Free Practice 2": "FP2",
-    "Free Practice 3": "FP3",
+    "Practice 1": "FP1",
+    "Practice 2": "FP2",
+    "Practice 3": "FP3",
     "Qualifying": "Q",
     "Sprint Qualifying": "SQ",
-    "Sprint Race": "S",
+    "Sprint": "S",
     "Race": "R",
 }
 
@@ -123,9 +123,17 @@ def _insert_session(cur, session, event_id: int) -> int:
     cur.execute(
         """
         INSERT INTO sessions (event_id, type, date)
-        VALUES (%s, %s, %s) RETURNING id
+        VALUES (%s, %s, %s) ON CONFLICT (event_id, type) DO NOTHING
+        RETURNING id
         """,
         (event_id, session_type, session.date)
+    )
+    row = cur.fetchone()
+    if row:
+        return row[0]
+    cur.execute(
+        "SELECT id FROM sessions WHERE event_id = %s AND type = %s",
+        (event_id, session_type)
     )
     return cur.fetchone()[0]
 
@@ -172,15 +180,17 @@ def _insert_laps(cur, session, session_id: int, driver_ids: dict[str, int]):
     :param driver_ids: Dictionary mapping driver codes to their db ID.
     """
     laps = session.laps
-    for _, lap in laps.iterrows():
+    for _, lap in laps.iterlaps():
         driver = lap["Driver"]
         if driver not in driver_ids:
             continue
+        top_speed, throttle_pct, brakes = _get_telemetry(lap)
         cur.execute(
             """
             INSERT INTO laps (session_id, driver_id, lap_number, lap_time,
-                              sector1, sector2, sector3, compound, tire_life, position)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                              sector1, sector2, sector3, compound, tire_life,
+                              position, top_speed, full_throttle_pct, brake_count)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 session_id,
@@ -193,6 +203,9 @@ def _insert_laps(cur, session, session_id: int, driver_ids: dict[str, int]):
                 lap.get("Compound"),
                 _safe_int(lap.get("TyreLife")),
                 _safe_int(lap.get("Position")),
+                top_speed,
+                throttle_pct,
+                brakes,
             )
         )
 
@@ -227,6 +240,23 @@ def _insert_pits(cur, session, session_id: int, driver_ids: dict[str, int]):
         )
 
 
+def _get_telemetry(lap) -> tuple:
+    try:
+        car = lap.get_car_data()
+        if car is None or car.empty:
+            return None, None, None
+        top_speed = int(car['Speed'].max())
+        full_throttle_pct = round(
+            (car['Throttle'] >= 99).mean() * 100, 1
+        )
+        brake_count = int(
+            (car['Brake'].astype(int).diff() > 0).sum()
+        )
+        return top_speed, full_throttle_pct, brake_count
+    except Exception:
+        return None, None, None
+
+
 def _safe_int(val) -> int | None:
     """
     Handle NaN and infinite values before giving them to the db.
@@ -258,7 +288,7 @@ def import_season(year: int):
     :param year: The season year to import
     """
     sch = get_event_schedule(year, include_testing=False)
-    types = ["FP1", "FP2", "FP3", "Q", "SQ", "S", "R"]
+    types = ["S", "FP1", "FP2", "FP3", "Q", "SQ", "R"]
 
     for _, event in sch.iterrows():
         event_name = event["EventName"]

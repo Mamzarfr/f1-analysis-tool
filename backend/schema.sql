@@ -40,7 +40,10 @@ CREATE TABLE laps (
     sector3 INTEGER,
     compound VARCHAR(20),
     tire_life INTEGER,
-    position INTEGER
+    position INTEGER,
+    top_speed INTEGER,
+    full_throttle_pct REAL,
+    brake_count INTEGER
 );
 
 CREATE TABLE pit_stops (
