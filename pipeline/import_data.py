@@ -69,10 +69,7 @@ def _insert_season(cur, year: int):
     :param cur: Database cursor
     :param year: The season year
     """
-    cur.execute(
-        "INSERT INTO seasons (year) VALUES (%s) ON CONFLICT DO NOTHING",
-        (year,)
-    )
+    cur.execute("INSERT INTO seasons (year) VALUES (%s) ON CONFLICT DO NOTHING", (year,))
 
 
 def _insert_event(cur, session, year: int) -> int:
@@ -88,7 +85,8 @@ def _insert_event(cur, session, year: int) -> int:
     cur.execute(
         """
         INSERT INTO events (season_year, round_number, name, country, circuit, event_date)
-        VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING
+        VALUES (%s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
         RETURNING id
         """,
         (
@@ -98,14 +96,14 @@ def _insert_event(cur, session, year: int) -> int:
             event["Country"],
             event["Location"],
             event["EventDate"],
-        )
+        ),
     )
     row = cur.fetchone()
     if row:
         return row[0]
     cur.execute(
         "SELECT id FROM events WHERE season_year = %s AND round_number = %s",
-        (year, event["RoundNumber"])
+        (year, event["RoundNumber"]),
     )
     return cur.fetchone()[0]
 
@@ -123,17 +121,18 @@ def _insert_session(cur, session, event_id: int) -> int:
     cur.execute(
         """
         INSERT INTO sessions (event_id, type, date)
-        VALUES (%s, %s, %s) ON CONFLICT (event_id, type) DO NOTHING
+        VALUES (%s, %s, %s)
+        ON CONFLICT (event_id, type) DO NOTHING
         RETURNING id
         """,
-        (event_id, session_type, session.date)
+        (event_id, session_type, session.date),
     )
     row = cur.fetchone()
     if row:
         return row[0]
     cur.execute(
         "SELECT id FROM sessions WHERE event_id = %s AND type = %s",
-        (event_id, session_type)
+        (event_id, session_type),
     )
     return cur.fetchone()[0]
 
@@ -153,10 +152,11 @@ def _insert_drivers(cur, session, year: int) -> dict[str, int]:
         cur.execute(
             """
             INSERT INTO drivers (code, name, team, season_year)
-            VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
             RETURNING id
             """,
-            (code, driver["FullName"], driver["TeamName"], year)
+            (code, driver["FullName"], driver["TeamName"], year),
         )
         row = cur.fetchone()
         if row:
@@ -164,7 +164,7 @@ def _insert_drivers(cur, session, year: int) -> dict[str, int]:
         else:
             cur.execute(
                 "SELECT id FROM drivers WHERE code = %s AND season_year = %s",
-                (code, year)
+                (code, year),
             )
             driver_ids[code] = cur.fetchone()[0]
     return driver_ids
@@ -206,7 +206,7 @@ def _insert_laps(cur, session, session_id: int, driver_ids: dict[str, int]):
                 top_speed,
                 throttle_pct,
                 brakes,
-            )
+            ),
         )
 
 
@@ -236,7 +236,7 @@ def _insert_pits(cur, session, session_id: int, driver_ids: dict[str, int]):
                 driver_ids[driver],
                 lap["LapNumber"],
                 _to_ms(pit_time),
-            )
+            ),
         )
 
 
@@ -245,13 +245,9 @@ def _get_telemetry(lap) -> tuple:
         car = lap.get_car_data()
         if car is None or car.empty:
             return None, None, None
-        top_speed = int(car['Speed'].max())
-        full_throttle_pct = round(
-            (car['Throttle'] >= 99).mean() * 100, 1
-        )
-        brake_count = int(
-            (car['Brake'].astype(int).diff() > 0).sum()
-        )
+        top_speed = int(car["Speed"].max())
+        full_throttle_pct = round((car["Throttle"] >= 99).mean() * 100, 1)
+        brake_count = int((car["Brake"].astype(int).diff() > 0).sum())
         return top_speed, full_throttle_pct, brake_count
     except Exception:
         return None, None, None
