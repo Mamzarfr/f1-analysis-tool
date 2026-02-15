@@ -11,14 +11,16 @@ CREATE TABLE events (
     name VARCHAR(100) NOT NULL,
     country VARCHAR(100) NOT NULL,
     circuit VARCHAR(100) NOT NULL,
-    event_date DATE NOT NULL
+    event_date DATE NOT NULL,
+    UNIQUE (season_year, round_number)
 );
 
 CREATE TABLE sessions (
     id SERIAL PRIMARY KEY,
     event_id INTEGER NOT NULL REFERENCES events(id),
     type session_type NOT NULL,
-    date TIMESTAMP NOT NULL
+    date TIMESTAMP NOT NULL,
+    UNIQUE (event_id, type)
 );
 
 CREATE TABLE drivers (
@@ -26,7 +28,8 @@ CREATE TABLE drivers (
     code VARCHAR(3) NOT NULL,
     name VARCHAR(100) NOT NULL,
     team VARCHAR(100) NOT NULL,
-    season_year INTEGER NOT NULL REFERENCES seasons(year)
+    season_year INTEGER NOT NULL REFERENCES seasons(year),
+    UNIQUE (code, season_year)
 );
 
 CREATE TABLE laps (
