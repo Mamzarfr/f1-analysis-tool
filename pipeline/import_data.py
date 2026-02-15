@@ -1,16 +1,16 @@
 # F1 Data Import Pipeline to feed database with session data from FastF1.
 
-from logging import basicConfig, getLogger, INFO
+from logging import INFO, basicConfig, getLogger
 
 import numpy as np
 import pandas as pd
-import psycopg2.extensions
-from fastf1 import Cache, get_session, get_event_schedule
-
-psycopg2.extensions.register_adapter(np.int64, lambda val: psycopg2.extensions.AsIs(int(val)))
-psycopg2.extensions.register_adapter(np.float64, lambda val: psycopg2.extensions.AsIs(float(val)))
+from fastf1 import Cache, get_event_schedule, get_session
+from psycopg2.extensions import AsIs, register_adapter
 
 from backend.app.database import get_connection
+
+register_adapter(np.int64, lambda v: AsIs(int(v)))
+register_adapter(np.float64, lambda v: AsIs(float(v)))
 
 basicConfig(level=INFO)
 logger = getLogger(__name__)
@@ -271,7 +271,7 @@ def _safe_int(val) -> int | None:
 
 def _to_ms(td) -> int | None:
     """
-    Convert pandas timedeltas to milliseconds.
+    Convert timedeltas to milliseconds.
 
     :param td: Timedelta or NaT
     :return: The time in milliseconds as an int, None if td is NaT/NaN
