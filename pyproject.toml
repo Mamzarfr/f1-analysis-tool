@@ -1,7 +1,7 @@
 [project]
 name = "f1-analysis-tool"
 version = "0.1.0"
-description = "F1 Race Analytics Platform - Data Engineering + Visualization"
+description = "F1 Racing Analysis Tool: A FastAPI wep app for analyzing and visualizing formula 1 racing data."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
@@ -11,9 +11,9 @@ dependencies = [
     "uvicorn[standard]>=0.27.0",
     "fastf1>=3.3.0",
     "pandas>=2.2.0",
-    "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.9",
     "pydantic>=2.6.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.optional-dependencies]
@@ -35,7 +35,7 @@ build-backend = "hatchling.build"
 packages = ["backend", "pipeline", "ml"]
 
 [tool.ruff]
-line-length = 80
+line-length = 90
 target-version = "py311"
 
 [tool.ruff.lint]
