@@ -19,8 +19,8 @@ def _get_db_url() -> str:
     """
     user = os.environ["POSTGRES_USER"]
     psw = os.environ["POSTGRES_PASSWORD"]
-    host = os.environ["POSTGRES_HOST"]
-    port = os.environ["POSTGRES_PORT"]
+    host = os.getenv("POSTGRES_HOST", "localhost")
+    port = os.getenv("POSTGRES_PORT", "5432")
     db = os.environ["POSTGRES_DB"]
     return f"postgresql://{user}:{psw}@{host}:{port}/{db}"
 
