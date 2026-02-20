@@ -31,7 +31,7 @@ session_maker = sessionmaker(bind=engine, expire_on_commit=False)
 
 def get_connection():
     """
-    Return a connection to the PostgreSQL database.
+    Return a connection to the PostgreSQL database (psycopg2).
 
     :return: A connection to the PostgreSQL database
     """
