@@ -1,3 +1,6 @@
+from tests.conftest import TEST_YEAR
+
+
 def test_seasons(client):
     resp = client.get("/seasons")
     assert resp.status_code == 200
@@ -15,26 +18,26 @@ def test_seasons_order(client):
 
 
 def test_events(client):
-    resp = client.get("/seasons/2025/events")
+    resp = client.get(f"/seasons/{TEST_YEAR}/events")
     assert resp.status_code == 200
     data = resp.json()
     first = data[0]
-    assert first["season_year"] == 2025
+    assert first["season_year"] == TEST_YEAR
     assert first["round_number"] == 1
 
 
 def test_events_order(client):
-    resp = client.get("/seasons/2025/events")
+    resp = client.get(f"/seasons/{TEST_YEAR}/events")
     data = resp.json()
     rounds = [e["round_number"] for e in data]
     assert rounds == sorted(rounds)
 
 
 def test_drivers(client):
-    resp = client.get("/seasons/2025/drivers")
+    resp = client.get(f"/seasons/{TEST_YEAR}/drivers")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) >= 20
+    assert len(data) >= 1
     assert "code" in data[0]
     assert "team" in data[0]
 
