@@ -57,7 +57,7 @@ def test_laps_filter2(client, db):
         assert 5 <= lap["lap_number"] <= 10
 
 
-def test_wrong_sessino_l(client):
+def test_wrong_session_l(client):
     resp = client.get("/sessions/67676767/laps")
     assert resp.status_code == 404
 
