@@ -17,7 +17,7 @@ def test_session_drivers(client, db):
     assert "team" in data[0]
 
 
-def test_list_session_laps(client, db):
+def test_list_laps(client, db):
     sid = _get_session_id(db)
     resp = client.get(f"/sessions/{sid}/laps")
     assert resp.status_code == 200
@@ -29,7 +29,7 @@ def test_list_session_laps(client, db):
     assert "compound" in lap
 
 
-def test_laps_filter_by_driver(client, db):
+def test_laps_filter1(client, db):
     sid = _get_session_id(db)
     lap = db.query(Lap).filter(
         Lap.session_id == sid
@@ -45,7 +45,7 @@ def test_laps_filter_by_driver(client, db):
     assert all(l["driver_code"] == code for l in data)
 
 
-def test_laps_filter_by_lap_range(client, db):
+def test_laps_filter2(client, db):
     sid = _get_session_id(db)
     resp = client.get(
         f"/sessions/{sid}/laps",
