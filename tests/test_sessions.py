@@ -31,9 +31,7 @@ def test_list_laps(client, db):
 
 def test_laps_filter1(client, db):
     sid = _get_session_id(db)
-    lap = db.query(Lap).filter(
-        Lap.session_id == sid
-    ).first()
+    lap = db.query(Lap).filter(Lap.session_id == sid).first()
     code = lap.driver.code
 
     resp = client.get(
@@ -42,7 +40,7 @@ def test_laps_filter1(client, db):
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert all(l["driver_code"] == code for l in data)
+    assert all(dlap["driver_code"] == code for dlap in data)
 
 
 def test_laps_filter2(client, db):

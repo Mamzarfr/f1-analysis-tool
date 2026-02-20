@@ -17,9 +17,7 @@ router = APIRouter(prefix="/seasons", tags=["seasons"])
 @router.get("", response_model=list[SeasonResponse])
 def list_seasons(db: Session = Depends(get_db)):
     """Return all available seasons"""
-    return (
-        db.query(Season).order_by(Season.year).all()
-    )
+    return db.query(Season).order_by(Season.year).all()
 
 
 @router.get(
@@ -28,9 +26,7 @@ def list_seasons(db: Session = Depends(get_db)):
 )
 def list_events(year: int, db: Session = Depends(get_db)):
     """Return all events for a season year"""
-    season = db.query(Season).filter(
-        Season.year == year
-    ).first()
+    season = db.query(Season).filter(Season.year == year).first()
     if not season:
         raise HTTPException(
             status_code=404,
@@ -50,17 +46,10 @@ def list_events(year: int, db: Session = Depends(get_db)):
 )
 def list_drivers(year: int, db: Session = Depends(get_db)):
     """Return all drivers for a given season"""
-    season = db.query(Season).filter(
-        Season.year == year
-    ).first()
+    season = db.query(Season).filter(Season.year == year).first()
     if not season:
         raise HTTPException(
             status_code=404,
             detail=f"Season {year} not found",
         )
-    return (
-        db.query(Driver)
-        .filter(Driver.season_year == year)
-        .order_by(Driver.code)
-        .all()
-    )
+    return db.query(Driver).filter(Driver.season_year == year).order_by(Driver.code).all()
